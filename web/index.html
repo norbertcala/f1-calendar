@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalendarz F1 z wynikami</title>
+<style>
+  :root { --bg:#fafafa; --fg:#15151e; --muted:#5f6170; --accent:#e10600; --card:#fff; --line:#e4e4ea; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111117; --fg:#f2f2f5; --muted:#a3a5b3; --card:#1b1b23; --line:#2c2c38; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:48px 16px; }
+  h1 { font-size:28px; margin:0 0 8px; letter-spacing:-.01em; }
+  h1 span { color:var(--accent); }
+  p { color:var(--muted); margin:0 0 24px; }
+  .btn { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; padding:12px 20px; border-radius:10px; font-weight:600; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-top:24px; }
+  code { display:block; word-break:break-all; font-size:14px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; margin:8px 0; }
+  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:8px; padding:6px 12px; cursor:pointer; }
+  ul { padding-left:20px; color:var(--muted); }
+  li { margin:4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1><span>F1</span> – terminarz i wyniki</h1>
+  <p>Wszystkie sesje weekendu. Po kwalifikacjach wyścig dostaje listę pól startowych, a po wyścigu w tytule pojawia się zwycięzca, w opisie pełna klasyfikacja. Odświeżane co godzinę.</p>
+  <a class="btn" id="sub" href="f1.ics">Subskrybuj w kalendarzu</a>
+  <div class="card">
+    <strong>Adres do subskrypcji</strong>
+    <code id="url">f1.ics</code>
+    <button id="copy">Kopiuj</button>
+  </div>
+  <div class="card">
+    <strong>Jak dodać</strong>
+    <ul>
+      <li><b>iPhone / Mac:</b> kliknij przycisk powyżej → Subskrybuj. W ustawieniach kalendarza ustaw „Odśwież: co godzinę”.</li>
+      <li><b>Google Calendar:</b> Inne kalendarze → + → Z adresu URL → wklej adres (Google odświeża z opóźnieniem do kilkunastu godzin).</li>
+      <li><b>Outlook:</b> Dodaj kalendarz → Subskrybuj z sieci Web → wklej adres.</li>
+    </ul>
+  </div>
+</main>
+<script>
+  const https = new URL("f1.ics", location.href).href;
+  document.getElementById("url").textContent = https;
+  document.getElementById("sub").href = https.replace(/^https?:/, "webcal:");
+  document.getElementById("copy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(https); e.target.textContent = "Skopiowano"; } catch { e.target.textContent = "Zaznacz i skopiuj ręcznie"; }
+  };
+</script>
+</body>
+</html>

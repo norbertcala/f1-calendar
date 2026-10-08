@@ -201,16 +201,18 @@ def sprint_quali_openf1(year: int, sq_date: str, fixtures: Path | None = None) -
         return []
     rows = []
     for r in results:
-        if not r.get("position"):
-            continue
         d = drivers.get(r["driver_number"], {})
         dur = r.get("duration")
         q = [fmt_lap(x) for x in dur] if isinstance(dur, list) else [fmt_lap(dur), None, None]
         q = (q + [None, None, None])[:3]
         name = d.get("full_name", "").title() or f"#{r['driver_number']}"
-        rows.append({"pos": int(r["position"]), "name": name, "short": d.get("last_name") or name.split()[-1],
+        rows.append({"pos": int(r["position"]) if r.get("position") else 99, "name": name, "short": d.get("last_name") or name.split()[-1],
                      "team": d.get("team_name", ""), "q": q})
-    return sorted(rows, key=lambda x: x["pos"])
+    rows.sort(key=lambda x: x["pos"])
+    for i, r in enumerate(rows, 1):  # kierowcy bez pozycji (np. bez czasu) na końcu stawki
+        if r["pos"] == 99:
+            r["pos"] = i
+    return rows
 
 
 def format_starting_grid(rows: list[dict], from_results: bool) -> str:

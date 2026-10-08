@@ -588,6 +588,16 @@ def main() -> int:
     args.out.write_text(ics, encoding="utf-8", newline="")
     print(f"Zapisano {args.out} ({len(ics.encode()) // 1024} KB)", file=sys.stderr)
 
+    # status.json – szybki podgląd, co jest w kalendarzu (diagnostyka)
+    unfolded = ics.replace("\r\n ", "")
+    summaries = [l[8:] for l in unfolded.split("\r\n") if l.startswith("SUMMARY:")]
+    sq_desc = next((b.split("DESCRIPTION:", 1)[1].split("\r\n", 1)[0] for b in unfolded.split("BEGIN:VEVENT")
+                    if f"UID:{max(years)}-" in b and "-sq@" in b and "Wyniki kwalifikacji do sprintu" in b), "")
+    status = {"generated": iso(datetime.now(timezone.utc)), "events": len(summaries),
+              "season": [s for s in summaries if s.startswith(("F1 Kwal", "F1 Sprint", "🏁", "🏆", "F1 Wyścig"))][-60:],
+              "sprintQualiSample": sq_desc.replace("\\n", "\n").replace("\\,", ",")[:1500]}
+    args.out.with_name("status.json").write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
+
     gp = build_gp_json(src, max(years))
     gp_path = args.out.with_name("gp.json")
     gp_path.write_text(json.dumps(gp, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

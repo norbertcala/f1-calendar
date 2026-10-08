@@ -29,7 +29,7 @@ jobs:
     outputs:
       run: ${{ steps.decide.outputs.run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: decide
         run: |
           if [ "${{ github.event_name }}" != "schedule" ]; then
@@ -43,8 +43,8 @@ jobs:
     if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Generuj f1.ics
@@ -53,8 +53,8 @@ jobs:
           cp web/index.html public/
           mkdir -p public/podglad-techlove && cp techlove/f1/index.html public/podglad-techlove/
           python f1_calendar.py --out public/f1.ics
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
@@ -66,4 +66,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

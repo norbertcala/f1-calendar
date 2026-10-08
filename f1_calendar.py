@@ -55,6 +55,7 @@ class Source:
 
     def __init__(self, fixtures: Path | None = None):
         self.fixtures = fixtures
+        self._cache: dict[str, list[dict]] = {}
 
     def _get(self, path: str, offset: int = 0) -> dict:
         if self.fixtures:
@@ -84,6 +85,8 @@ class Source:
 
     def races(self, path: str) -> list[dict]:
         """Zwraca listę wyścigów z RaceTable, łącząc strony i rozbite rundy."""
+        if path in self._cache:
+            return self._cache[path]
         first = self._get(path)
         total = int(first["MRData"].get("total", 0))
         pages = [first]
@@ -96,7 +99,7 @@ class Source:
         merged: dict[str, dict] = {}
         for p in pages:
             for race in p["MRData"]["RaceTable"]["Races"]:
-                key = race["round"]
+                key = f"{race.get('season')}-{race['round']}"
                 if key not in merged:
                     merged[key] = race
                     continue
@@ -104,7 +107,8 @@ class Source:
                 for list_key in ("Results", "QualifyingResults", "SprintResults"):
                     if list_key in race:
                         merged[key].setdefault(list_key, []).extend(race[list_key])
-        return list(merged.values())
+        self._cache[path] = list(merged.values())
+        return self._cache[path]
 
 
 # --------------------------------------------------------------------- formatowanie
@@ -186,6 +190,41 @@ def format_results(rows: list[dict], kind: str) -> str:
     return "\n".join(lines)
 
 
+# ------------------------------------------------------ polskie nazwy i flagi
+
+# fragment nazwy wyścigu (ang.) -> nazwa w dopełniaczu po polsku
+GP_PL = [
+    ("Bahrain Grand Prix in Malaysia", "Bahrajnu w Malezji"),
+    ("Australian", "Australii"), ("Chinese", "Chin"), ("Japanese", "Japonii"), ("Bahrain", "Bahrajnu"),
+    ("Saudi Arabian", "Arabii Saudyjskiej"), ("Miami", "Miami"), ("Emilia Romagna", "Emilii-Romanii"),
+    ("Monaco", "Monako"), ("Barcelona", "Barcelony-Katalonii"), ("Spanish", "Hiszpanii"), ("Madrid", "Madrytu"),
+    ("Canadian", "Kanady"), ("Austrian", "Austrii"), ("British", "Wielkiej Brytanii"), ("Belgian", "Belgii"),
+    ("Hungarian", "Węgier"), ("Dutch", "Holandii"), ("Italian", "Włoch"), ("Azerbaijan", "Azerbejdżanu"),
+    ("Singapore", "Singapuru"), ("United States", "USA"), ("Mexico City", "Meksyku"), ("Mexican", "Meksyku"),
+    ("São Paulo", "São Paulo"), ("Brazilian", "Brazylii"), ("Las Vegas", "Las Vegas"), ("Qatar", "Kataru"),
+    ("Abu Dhabi", "Abu Zabi"), ("Portuguese", "Portugalii"), ("Turkish", "Turcji"), ("French", "Francji"),
+    ("German", "Niemiec"), ("Russian", "Rosji"), ("Malaysian", "Malezji"), ("Korean", "Korei"),
+    ("Indian", "Indii"), ("European", "Europy"), ("Styrian", "Styrii"), ("Tuscan", "Toskanii"),
+    ("Eifel", "Eifel"), ("Sakhir", "Sakhiru"), ("70th Anniversary", "70-lecia"),
+]
+
+COUNTRY_ISO = {
+    "Australia": "au", "China": "cn", "Japan": "jp", "Bahrain": "bh", "Saudi Arabia": "sa", "USA": "us",
+    "United States": "us", "Italy": "it", "Monaco": "mc", "Spain": "es", "Canada": "ca", "Austria": "at",
+    "UK": "gb", "United Kingdom": "gb", "Belgium": "be", "Hungary": "hu", "Netherlands": "nl",
+    "Azerbaijan": "az", "Singapore": "sg", "Mexico": "mx", "Brazil": "br", "Qatar": "qa", "UAE": "ae",
+    "United Arab Emirates": "ae", "Malaysia": "my", "Portugal": "pt", "Turkey": "tr", "France": "fr",
+    "Germany": "de", "Russia": "ru",
+}
+
+
+def gp_name_pl(race_name: str) -> str:
+    for key, pl in GP_PL:
+        if key in race_name:
+            return f"GP {pl}"
+    return race_name.replace("Grand Prix", "GP")
+
+
 # ---------------------------------------------------------------------------- iCal
 
 
@@ -248,7 +287,29 @@ def vevent(uid: str, start: datetime | date, minutes: int, summary: str, descrip
 # --------------------------------------------------------------------- budowa sezonu
 
 
-def build_season(src: Source, year: int) -> list[list[str]]:
+def past_winners(src: Source, race: dict, n: int = 3) -> list[dict]:
+    """Ostatnich n zwycięzców wyścigów na tym samym torze przed danym wyścigiem."""
+    cid = race.get("Circuit", {}).get("circuitId")
+    if not cid:
+        return []
+    out = []
+    for r in src.races(f"circuits/{cid}/results/1"):
+        if r.get("date", "") >= race["date"] or not r.get("Results"):
+            continue
+        w = r["Results"][0]
+        out.append({"season": int(r["season"]), "date": r["date"], "raceName": r.get("raceName", ""),
+                    "driver": driver_name(w["Driver"]), "team": team(w)})
+    out.sort(key=lambda x: x["date"], reverse=True)
+    return out[:n]
+
+
+def format_past_winners(winners: list[dict]) -> str:
+    if not winners:
+        return ""
+    return "Ostatni zwycięzcy na tym torze:\n" + "\n".join(f"{w['season']}  {w['driver']} ({w['team']})" for w in winners)
+
+
+def build_season(src: Source, year: int, with_history: bool = False) -> list[list[str]]:
     print(f"Sezon {year}: terminarz…", file=sys.stderr)
     schedule = src.races(str(year))
     print(f"Sezon {year}: kwalifikacje, wyniki, sprinty…", file=sys.stderr)
@@ -321,6 +382,10 @@ def build_season(src: Source, year: int) -> list[list[str]]:
             desc += "\n\n" + format_starting_grid(q_rows, from_results=False)
         else:
             desc += "\n\nPola startowe pojawią się po kwalifikacjach."
+        if with_history:
+            hist = format_past_winners(past_winners(src, race))
+            if hist:
+                desc += "\n\n" + hist
         events.append(vevent(uid("race"), start, RACE_DURATION, summary, desc, location, url, "F1"))
 
     print(f"Sezon {year}: {len(events)} wydarzeń", file=sys.stderr)
@@ -340,11 +405,47 @@ def build_calendar(src: Source, years: list[int]) -> str:
         "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
         "X-PUBLISHED-TTL:PT1H",
     ]
+    latest = max(years)
     for y in years:
-        for ev in build_season(src, y):
+        for ev in build_season(src, y, with_history=(y == latest)):
             lines += ev
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines) + "\r\n"
+
+
+def iso(v: datetime | date) -> str:
+    return v.astimezone(timezone.utc).isoformat().replace("+00:00", "Z") if isinstance(v, datetime) else v.isoformat()
+
+
+def build_gp_json(src: Source, year: int) -> dict:
+    """Dane dla strony: terminarz sezonu, podium i zwycięzcy z poprzednich lat na danym torze."""
+    results = {r["round"]: r.get("Results", []) for r in src.races(f"{year}/results")}
+    races = []
+    for race in src.races(str(year)):
+        circuit = race.get("Circuit", {})
+        loc = circuit.get("Location", {})
+        sessions, seen = [], set()
+        for key, code, label, minutes in SESSIONS:
+            if key in race and code not in seen:
+                seen.add(code)
+                st = parse_dt(race[key]["date"], race[key].get("time"))
+                sessions.append({"code": code, "label": label, "start": iso(st), "minutes": minutes,
+                                 "allDay": not isinstance(st, datetime)})
+        rs = parse_dt(race["date"], race.get("time"))
+        sessions.append({"code": "race", "label": "Wyścig", "start": iso(rs), "minutes": RACE_DURATION,
+                         "allDay": not isinstance(rs, datetime)})
+        sessions.sort(key=lambda s: s["start"])
+        podium = [{"pos": int(r["position"]), "driver": driver_name(r["Driver"]), "team": team(r)}
+                  for r in sorted(results.get(race["round"], []), key=lambda x: int(x["position"]))[:3]]
+        races.append({
+            "season": year, "round": int(race["round"]), "raceName": race["raceName"],
+            "namePl": gp_name_pl(race["raceName"]), "circuit": circuit.get("circuitName", ""),
+            "locality": loc.get("locality", ""), "country": loc.get("country", ""),
+            "iso": COUNTRY_ISO.get(loc.get("country", ""), ""),
+            "sessions": sessions, "podium": podium,
+            "pastWinners": [{k: w[k] for k in ("season", "driver", "team")} for w in past_winners(src, race)],
+        })
+    return {"generated": iso(datetime.now(timezone.utc)), "season": year, "races": races}
 
 
 # ------------------------------------------------------------ kiedy aktualizować
@@ -406,10 +507,17 @@ def main() -> int:
     if args.check:
         return check(args.check)
 
-    ics = build_calendar(Source(args.fixtures), sorted(set(args.years)))
+    src = Source(args.fixtures)
+    years = sorted(set(args.years))
+    ics = build_calendar(src, years)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(ics, encoding="utf-8", newline="")
     print(f"Zapisano {args.out} ({len(ics.encode()) // 1024} KB)", file=sys.stderr)
+
+    gp = build_gp_json(src, max(years))
+    gp_path = args.out.with_name("gp.json")
+    gp_path.write_text(json.dumps(gp, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"Zapisano {gp_path} ({len(gp['races'])} wyścigów)", file=sys.stderr)
     return 0
 
 

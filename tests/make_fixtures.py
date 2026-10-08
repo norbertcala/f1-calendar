@@ -20,8 +20,11 @@ def drv(i):
     return {"driverId": d[0], "givenName": d[1], "familyName": d[2], "code": d[3]}, {"name": d[4]}
 
 
-def circuit(name, city, country):
-    return {"circuitName": name, "Location": {"locality": city, "country": country}}
+def circuit(name, city, country, cid=None):
+    c = {"circuitName": name, "Location": {"locality": city, "country": country}}
+    if cid:
+        c["circuitId"] = cid
+    return c
 
 
 def mr(races, total):
@@ -29,7 +32,7 @@ def mr(races, total):
 
 
 r1 = {"season": "2026", "round": "1", "raceName": "Australian Grand Prix", "url": "https://en.wikipedia.org/wiki/2026_Australian_Grand_Prix",
-      "Circuit": circuit("Albert Park Grand Prix Circuit", "Melbourne", "Australia"), "date": "2026-03-08", "time": "04:00:00Z",
+      "Circuit": circuit("Albert Park Grand Prix Circuit", "Melbourne", "Australia", "albert_park"), "date": "2026-03-08", "time": "04:00:00Z",
       "FirstPractice": {"date": "2026-03-06", "time": "01:30:00Z"}, "SecondPractice": {"date": "2026-03-06", "time": "05:00:00Z"},
       "ThirdPractice": {"date": "2026-03-07", "time": "01:30:00Z"}, "Qualifying": {"date": "2026-03-07", "time": "05:00:00Z"}}
 r2 = {"season": "2026", "round": "2", "raceName": "Chinese Grand Prix", "url": "https://en.wikipedia.org/wiki/2026_Chinese_Grand_Prix",
@@ -89,4 +92,11 @@ for pos, i in enumerate([1, 0, 5, 2, 3, 4], 1):
     sprint.append({"position": str(pos), "positionText": str(pos), "points": str(max(0, 9 - pos)), "Driver": d, "Constructor": c,
                    "grid": str([2, 1, 3, 4, 6, 5][pos - 1]), "status": "Finished", "Time": {"time": "30:11.000" if pos == 1 else f"+{pos}.1"}})
 (OUT / "2026_sprint.json").write_text(json.dumps(mr([{**{k: r2[k] for k in ("season", "round", "raceName")}, "SprintResults": sprint}], 6)))
+# historia zwycięzców w Melbourne (dwie strony z różnymi sezonami i tą samą rundą)
+hist = []
+for season, rnd, i in [(2023, "3", 0), (2024, "3", 2), (2025, "1", 1), (2022, "3", 2), (2026, "1", 0)]:
+    d, c = drv(i)
+    hist.append({"season": str(season), "round": rnd, "raceName": "Australian Grand Prix", "date": f"{season}-03-1{season % 10}" if season < 2026 else "2026-03-08",
+                 "Results": [{"position": "1", "Driver": d, "Constructor": c}]})
+(OUT / "circuits_albert_park_results_1.json").write_text(json.dumps(mr(hist, len(hist))))
 print("ok")

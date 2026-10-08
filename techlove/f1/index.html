@@ -75,17 +75,50 @@
                      border: 0; padding: 0 18px; cursor: pointer; }
   .copyline button:hover { background: var(--accent); color: #fff; }
 
-  /* karta „na żywo” w hero */
-  .live { background: #fff; color: var(--ink); padding: 24px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
-  .live h2 { font: 400 13px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); margin: 0 0 14px; }
-  .live .row + .row { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
-  .live .title { font: 400 22px/1.2 var(--head); text-transform: uppercase; color: var(--ink-strong); }
-  .live .when { color: var(--muted); font-size: 16px; margin-top: 6px; }
-  .live .podium { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 17px; }
-  .live .podium b { font-family: var(--head); font-weight: 500; display: inline-block; width: 28px; }
-  .countdown { font: 400 15px var(--head); letter-spacing: 1px; color: var(--accent); margin-top: 8px; }
-  .live .skeleton { height: 14px; background: var(--soft); margin: 8px 0; }
-  .live .skeleton.w60 { width: 60%; }
+  /* karta najbliższego Grand Prix */
+  .gp { background: #fff; color: var(--ink); box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  .gp-head { padding: 22px 22px 18px; }
+  .gp-top { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            font: 400 12px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); }
+  .gp-top .dates { color: var(--ink-strong); letter-spacing: 1px; font-size: 14px; }
+  .gp-name { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 14px; }
+  .gp-name h2 { font: 400 32px/1.05 var(--head); text-transform: uppercase; margin: 0; color: var(--ink-strong); }
+  .gp-name img { width: 58px; height: auto; border: 1px solid var(--line); flex: none; }
+  .gp-place { color: var(--muted); font-size: 16px; margin-top: 6px; }
+  .cd { background: var(--night); color: #fff; padding: 18px 12px 16px; position: relative; }
+  .cd::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+               background: linear-gradient(90deg, var(--heart), var(--accent)); }
+  .cd-label { text-align: center; font: 400 11px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: #9a9a9a; margin-bottom: 10px; }
+  .cd-grid { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
+  .cd-grid b { display: block; font: 500 42px/1 var(--head); font-variant-numeric: tabular-nums; }
+  .cd-grid span { display: block; margin-top: 6px; font: 400 11px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--heart); }
+  .cd-live { text-align: center; font: 400 26px/1.2 var(--head); text-transform: uppercase; }
+  .days { margin: 0; padding: 0; list-style: none; }
+  .day { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--line); }
+  .day:nth-child(odd) { background: var(--soft); }
+  .day-date b { display: block; font: 500 22px/1 var(--head); color: var(--ink-strong); }
+  .day-date span { display: block; margin-top: 5px; font: 400 11px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); }
+  .sess { display: flex; justify-content: space-between; gap: 10px; font-size: 17px; line-height: 1.35; padding: 2px 0; }
+  .sess .t { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-strong); }
+  .sess .t::before { content: "/ "; color: var(--heart); }
+  .sess.done { color: var(--faint); }
+  .sess.done .t { color: var(--faint); }
+  .sess.next .n { font-weight: 600; color: var(--ink-strong); }
+  .sess.next .n::after { content: "następna"; margin-left: 8px; font: 400 10px/1 var(--head); letter-spacing: 1.5px; text-transform: uppercase;
+                         color: #fff; background: var(--accent); padding: 3px 6px; vertical-align: 2px; }
+  .gp-block { padding: 18px 22px; border-bottom: 1px solid var(--line); }
+  .gp-block:last-child { border-bottom: 0; }
+  .gp-block h3 { font: 400 12px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); margin: 0 0 12px; }
+  .winners { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .winners li { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: baseline; font-size: 17px; }
+  .winners .y { font: 500 16px var(--head); color: var(--ink-strong); }
+  .winners .d { color: var(--ink-strong); font-weight: 500; }
+  .winners .tm { font: 400 11px/1 var(--head); letter-spacing: 1.5px; text-transform: uppercase; color: #fff; background: var(--ink-strong); padding: 4px 8px; white-space: nowrap; }
+  .last-line { font-size: 16px; color: var(--muted); }
+  .last-line strong { color: var(--ink-strong); font-weight: 600; }
+  .skeleton { height: 14px; background: var(--soft); margin: 8px 0; }
+  .skeleton.w60 { width: 60%; }
+  @media (max-width: 380px) { .cd-grid b { font-size: 34px; } .gp-name h2 { font-size: 27px; } }
 
   /* sekcje */
   section.block { padding: 80px 0; }
@@ -182,15 +215,12 @@
       </div>
     </div>
 
-    <aside class="live" aria-live="polite">
-      <div class="row" id="next">
-        <h2>Najbliższa sesja</h2>
-        <div class="skeleton"></div><div class="skeleton w60"></div>
+    <aside class="gp" id="gp" aria-live="polite">
+      <div class="gp-head">
+        <div class="gp-top"><span>Najbliższe Grand Prix</span></div>
+        <div class="skeleton" style="height:30px;margin-top:16px"></div><div class="skeleton w60"></div>
       </div>
-      <div class="row" id="last">
-        <h2>Ostatni wyścig</h2>
-        <div class="skeleton"></div><div class="skeleton w60"></div>
-      </div>
+      <div class="cd"><div class="cd-label">Do startu wyścigu</div><div class="cd-grid"><div><b>–</b><span>dni</span></div><div><b>–</b><span>godz</span></div><div><b>–</b><span>min</span></div><div><b>–</b><span>sek</span></div></div></div>
     </aside>
   </div>
 </section>
@@ -354,72 +384,94 @@ P3  Charles Leclerc – +8.940 | start P4 ▲1, 15 pkt
     } else { input.select(); document.execCommand("copy"); done(); }
   });
 
-  // najbliższa sesja i ostatni wyścig – na żywo z kalendarza
-  function unescape(s) { return s.replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\"); }
-  function parseDate(v) {
-    var m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/);
-    if (!m) return null;
-    return m[4] ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : new Date(+m[1], m[2] - 1, +m[3]);
-  }
-  function parse(text) {
-    var lines = text.replace(/\r\n[ \t]/g, "").split(/\r?\n/), out = [], ev = null;
-    lines.forEach(function (l) {
-      if (l === "BEGIN:VEVENT") ev = {};
-      else if (l === "END:VEVENT") { if (ev && ev.start) out.push(ev); ev = null; }
-      else if (ev) {
-        var i = l.indexOf(":"); if (i < 0) return;
-        var key = l.slice(0, i).split(";")[0], val = l.slice(i + 1);
-        if (key === "DTSTART") { ev.start = parseDate(val); ev.allDay = val.length === 8; }
-        else if (key === "SUMMARY") ev.summary = unescape(val);
-        else if (key === "DESCRIPTION") ev.desc = unescape(val);
-        else if (key === "UID") ev.uid = val;
-      }
+  // najbliższe Grand Prix – dane z gp.json generowanego razem z kalendarzem
+  var GP = "https://norbertcala.github.io/f1-calendar/gp.json";
+  var DAYS = ["nie", "pon", "wto", "śro", "czw", "pią", "sob"];
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function dmy(d) { return pad(d.getDate()) + "." + pad(d.getMonth() + 1); }
+  function hm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function toDate(s) { return s.length === 10 ? new Date(s + "T00:00:00") : new Date(s); }
+
+  fetch(GP, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (data) {
+    var now = new Date();
+    var races = data.races.map(function (r) {
+      r.sessions.forEach(function (s) { s.d = toDate(s.start); s.end = new Date(s.d.getTime() + s.minutes * 6e4); });
+      r.raceSession = r.sessions.filter(function (s) { return s.code === "race"; })[0];
+      return r;
     });
-    return out.sort(function (a, b) { return a.start - b.start; });
-  }
-  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
-  function fmt(ev) {
-    var opts = ev.allDay ? { weekday: "long", day: "numeric", month: "long" }
-                         : { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" };
-    return ev.start.toLocaleString("pl-PL", opts);
-  }
-  function countdown(d) {
-    var ms = d - new Date(); if (ms <= 0) return "trwa lub właśnie się zakończyła";
-    var h = Math.floor(ms / 36e5), days = Math.floor(h / 24);
-    if (days >= 1) return "za " + days + (days === 1 ? " dzień" : " dni") + " i " + (h % 24) + " h";
-    var m = Math.floor(ms / 6e4) % 60; return "za " + h + " h " + m + " min";
-  }
-  function clean(s) { return s.replace(/^🏆\s*/, "").replace(/^🏁\s*/, ""); }
+    // bieżący weekend zostaje na karcie do 3 h po wyścigu
+    var gp = races.filter(function (r) { return r.raceSession.d.getTime() + 3 * 36e5 > now; })[0];
+    var done = races.filter(function (r) { return r.podium && r.podium.length; });
+    var last = done[done.length - 1];
+    var box = document.getElementById("gp");
 
-  fetch(ICS, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (text) {
-    var evs = parse(text), now = new Date();
-    var next = evs.filter(function (e) { return e.start > new Date(now - 2 * 36e5); })[0];
-    var races = evs.filter(function (e) { return /-race@/.test(e.uid || "") && e.start < now && /^🏆/.test(e.summary || ""); });
-    var last = races[races.length - 1];
-
-    var n = document.getElementById("next");
-    if (next) {
-      n.innerHTML = "<h2>Najbliższa sesja</h2><div class='title'>" + esc(next.summary) + "</div>" +
-        "<div class='when'>" + esc(fmt(next)) + "</div><div class='countdown'>" + esc(countdown(next.start)) + "</div>";
-    } else {
-      n.innerHTML = "<h2>Najbliższa sesja</h2><div class='title'>Sezon zakończony</div><div class='when'>Nowy terminarz pojawi się automatycznie.</div>";
+    if (!gp) {
+      box.innerHTML = "<div class='gp-head'><div class='gp-top'><span>Sezon " + data.season + "</span></div>" +
+        "<div class='gp-name'><h2>Sezon zakończony</h2></div><div class='gp-place'>Terminarz kolejnego sezonu pojawi się automatycznie.</div></div>" +
+        lastHtml(last);
+      return;
     }
 
-    var l = document.getElementById("last");
-    if (last) {
-      var podium = (last.desc.match(/Podium: (.+)/) || [])[1] || "";
-      var items = podium.split(", ").map(function (p) {
-        var m = p.match(/^(\d)\. (.+)$/); return m ? "<li><b>P" + m[1] + "</b>" + esc(m[2]) + "</li>" : "";
-      }).join("");
-      l.innerHTML = "<h2>Ostatni wyścig</h2><div class='title'>" + esc(clean(last.summary)) + "</div>" +
-        "<div class='when'>" + esc(fmt(last)) + "</div>" + (items ? "<ul class='podium'>" + items + "</ul>" : "");
-    } else {
-      l.remove();
+    var first = gp.sessions[0].d, race = gp.raceSession.d;
+    var flag = gp.iso ? "<img src='https://flagcdn.com/w160/" + esc(gp.iso) + ".png' alt='Flaga: " + esc(gp.country) + "' onerror='this.remove()'>" : "";
+    var nextS = gp.sessions.filter(function (s) { return s.end > now; })[0];
+
+    // sesje pogrupowane po dniach (czas lokalny odwiedzającego)
+    var byDay = [], key = null;
+    gp.sessions.forEach(function (s) {
+      var k = s.d.toDateString();
+      if (k !== key) { byDay.push({ d: s.d, list: [] }); key = k; }
+      byDay[byDay.length - 1].list.push(s);
+    });
+    var days = byDay.map(function (day) {
+      return "<li class='day'><div class='day-date'><b>" + dmy(day.d) + "</b><span>" + DAYS[day.d.getDay()] + "</span></div><div>" +
+        day.list.map(function (s) {
+          var cls = s.end <= now ? "sess done" : (s === nextS ? "sess next" : "sess");
+          var t = s.allDay ? "godz. tba" : (s.code === "race" ? hm(s.d) : hm(s.d) + "–" + hm(s.end));
+          return "<div class='" + cls + "'><span class='n'>" + esc(s.label) + "</span><span class='t'>" + t + "</span></div>";
+        }).join("") + "</div></li>";
+    }).join("");
+
+    var winners = (gp.pastWinners || []).map(function (w) {
+      return "<li><span class='y'>" + w.season + "</span><span class='d'>" + esc(w.driver) + "</span><span class='tm'>" + esc(w.team) + "</span></li>";
+    }).join("");
+
+    box.innerHTML =
+      "<div class='gp-head'><div class='gp-top'><span>Runda " + gp.round + " · najbliższe Grand Prix</span><span class='dates'>" +
+        dmy(first) + " – " + dmy(race) + "</span></div>" +
+        "<div class='gp-name'><h2>" + esc(gp.namePl) + "</h2>" + flag + "</div>" +
+        "<div class='gp-place'>" + esc(gp.circuit) + ", " + esc(gp.locality) + "</div></div>" +
+      "<div class='cd' id='cd'></div>" +
+      "<ul class='days'>" + days + "</ul>" +
+      (winners ? "<div class='gp-block'><h3>Zwycięzcy na tym torze</h3><ul class='winners'>" + winners + "</ul></div>" : "") +
+      lastHtml(last);
+
+    var cd = document.getElementById("cd");
+    function tick() {
+      var ms = race - new Date();
+      if (ms <= 0) {
+        cd.innerHTML = "<div class='cd-live'>" + (ms > -2.5 * 36e5 ? "Wyścig trwa" : "Wyniki wkrótce w kalendarzu") + "</div>";
+        return;
+      }
+      var s = Math.floor(ms / 1000);
+      cd.innerHTML = "<div class='cd-label'>Do startu wyścigu</div><div class='cd-grid'>" +
+        [[Math.floor(s / 86400), "dni"], [Math.floor(s / 3600) % 24, "godz"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sek"]]
+          .map(function (p) { return "<div><b>" + p[0] + "</b><span>" + p[1] + "</span></div>"; }).join("") + "</div>";
     }
+    tick(); setInterval(tick, 1000);
   }).catch(function () {
-    var box = document.querySelector(".live");
-    box.innerHTML = "<h2>Kalendarz</h2><div class='title'>Wszystkie sesje F1</div><div class='when'>Treningi, kwalifikacje, sprinty i wyścigi – z wynikami.</div>";
+    document.getElementById("gp").innerHTML = "<div class='gp-head'><div class='gp-top'><span>Kalendarz F1</span></div>" +
+      "<div class='gp-name'><h2>Wszystkie sesje F1</h2></div><div class='gp-place'>Treningi, kwalifikacje, sprinty i wyścigi – z wynikami.</div></div>";
   });
+
+  function lastHtml(last) {
+    if (!last) return "";
+    var p = last.podium.map(function (x, i) {
+      return i === 0 ? "<strong>" + esc(x.driver) + "</strong> (" + esc(x.team) + ")" : x.pos + ". " + esc(x.driver.split(" ").slice(-1)[0]);
+    }).join(", ");
+    return "<div class='gp-block'><h3>Ostatni wyścig · " + esc(last.namePl) + "</h3><div class='last-line'>Wygrał " + p + "</div></div>";
+  }
 })();
 </script>
 </body>

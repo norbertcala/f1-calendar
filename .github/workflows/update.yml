@@ -1,8 +1,12 @@
 name: Aktualizuj kalendarz F1
 
+# Co godzinę uruchamia się tylko szybkie sprawdzenie (bez zapytań do API F1).
+# Pełna aktualizacja rusza 3, 6 i 8 godzin po kwalifikacjach, sprincie i wyścigu,
+# raz w tygodniu (poniedziałek rano, na wypadek zmian w terminarzu),
+# po każdym pushu i po ręcznym uruchomieniu.
 on:
   schedule:
-    - cron: "17 * * * *"   # co godzinę
+    - cron: "17 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -16,8 +20,27 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  ICS_URL: https://norbertcala.github.io/f1-calendar/f1.ics
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            python3 f1_calendar.py --check "$ICS_URL"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +51,7 @@ jobs:
         run: |
           mkdir -p public
           cp web/index.html public/
+          mkdir -p public/podglad-techlove && cp techlove/f1/index.html public/podglad-techlove/
           python f1_calendar.py --out public/f1.ics
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalendarz F1 z wynikami do subskrypcji – Techlove</title>
+<meta name="description" content="Darmowy kalendarz Formuły 1 do iPhone'a, Google Calendar i Outlooka. Wszystkie treningi, kwalifikacje, sprinty i wyścigi, pola startowe po kwalifikacjach i zwycięzcy po wyścigu.">
+<meta property="og:title" content="Kalendarz F1 z wynikami – Techlove">
+<meta property="og:description" content="Subskrybuj raz, a kalendarz sam dopisze pola startowe i zwycięzców każdego Grand Prix.">
+<meta property="og:url" content="https://techlove.pl/f1/">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://techlove.pl/f1/">
+<link rel="icon" href="https://techlove.pl/TL.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600&display=swap&subset=latin-ext" rel="stylesheet">
+<style>
+  :root {
+    --ink: #222222;
+    --ink-strong: #000000;
+    --muted: #6b6b6b;
+    --faint: #999999;
+    --line: #ebebeb;
+    --paper: #ffffff;
+    --soft: #f6f6f6;
+    --accent: #4135bf;      /* fiolet etykiet techlove */
+    --accent-dark: #2f2696;
+    --heart: #f0305a;       /* czerwień z logo */
+    --night: #030303;       /* stopka techlove */
+    --head: "Oswald", "Arial Narrow", sans-serif;
+    --body: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 18px/1.6 var(--body); }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 16px; }
+
+  /* etykieta jak kategorie na techlove.pl */
+  .label { display: inline-block; font: 400 11px/1 var(--head); letter-spacing: 2px; text-transform: uppercase;
+           color: #fff; background: var(--ink-strong); padding: 6px 15px; }
+  .label.accent { background: var(--accent); }
+
+  /* nagłówek */
+  .site-head { border-bottom: 1px solid var(--line); background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  .site-head .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo img { height: 30px; width: auto; }
+  .back { font: 400 12px/1 var(--head); letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; color: var(--ink);
+          display: inline-flex; align-items: center; gap: 8px; }
+  .back:hover { color: var(--accent); }
+
+  /* hero */
+  .hero { background: var(--night); color: #fff; position: relative; overflow: hidden; }
+  .hero::before { content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 14px, transparent 14px 28px); }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+    background: linear-gradient(90deg, var(--heart), var(--accent)); }
+  .hero .wrap { position: relative; display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; padding-top: 64px; padding-bottom: 72px; }
+  .hero h1 { font: 400 clamp(34px, 5vw, 56px)/1.08 var(--head); text-transform: uppercase; margin: 18px 0 18px; letter-spacing: .5px; }
+  .hero h1 em { font-style: normal; color: var(--heart); }
+  .hero p.lead { font-size: 20px; color: #d6d6d6; margin: 0 0 30px; max-width: 34em; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; font: 500 14px/1 var(--head); letter-spacing: 2px; text-transform: uppercase;
+         text-decoration: none; padding: 17px 26px; border: 0; cursor: pointer; transition: background .15s, color .15s; }
+  .btn-primary { background: var(--heart); color: #fff; }
+  .btn-primary:hover { background: #d0193f; }
+  .btn-ghost { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+  .btn-ghost:hover { box-shadow: inset 0 0 0 1px #fff; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .copyline { margin-top: 22px; display: flex; gap: 0; max-width: 520px; }
+  .copyline input { flex: 1; min-width: 0; font: 400 15px var(--body); color: #cfcfcf; background: rgba(255,255,255,.06);
+                    border: 1px solid rgba(255,255,255,.18); border-right: 0; padding: 12px 14px; }
+  .copyline button { font: 400 12px/1 var(--head); letter-spacing: 1.5px; text-transform: uppercase; background: #fff; color: #000;
+                     border: 0; padding: 0 18px; cursor: pointer; }
+  .copyline button:hover { background: var(--accent); color: #fff; }
+
+  /* karta „na żywo” w hero */
+  .live { background: #fff; color: var(--ink); padding: 24px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  .live h2 { font: 400 13px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); margin: 0 0 14px; }
+  .live .row + .row { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .live .title { font: 400 22px/1.2 var(--head); text-transform: uppercase; color: var(--ink-strong); }
+  .live .when { color: var(--muted); font-size: 16px; margin-top: 6px; }
+  .live .podium { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 17px; }
+  .live .podium b { font-family: var(--head); font-weight: 500; display: inline-block; width: 28px; }
+  .countdown { font: 400 15px var(--head); letter-spacing: 1px; color: var(--accent); margin-top: 8px; }
+  .live .skeleton { height: 14px; background: var(--soft); margin: 8px 0; }
+  .live .skeleton.w60 { width: 60%; }
+
+  /* sekcje */
+  section.block { padding: 80px 0; }
+  section.block.alt { background: var(--soft); }
+  .section-head { margin-bottom: 40px; max-width: 720px; }
+  .section-head h2 { font: 400 clamp(28px, 3.4vw, 38px)/1.15 var(--head); text-transform: uppercase; margin: 14px 0 12px; color: var(--ink-strong); }
+  .section-head p { color: var(--muted); margin: 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .item { background: var(--paper); padding: 28px 26px; }
+  .item .num { font: 300 13px var(--head); letter-spacing: 2px; color: var(--faint); }
+  .item h3 { font: 400 21px/1.2 var(--head); text-transform: uppercase; margin: 10px 0 10px; color: var(--ink-strong); }
+  .item p { margin: 0; color: var(--muted); font-size: 17px; }
+
+  /* oś czasu – jak zmienia się wydarzenie */
+  .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .stage .when-tag { font: 400 12px/1 var(--head); letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: block; }
+  .event { background: var(--paper); border-left: 4px solid var(--ink-strong); padding: 18px 18px 16px; box-shadow: 0 1px 0 var(--line), 0 8px 24px rgba(0,0,0,.06); }
+  .stage:nth-child(2) .event { border-left-color: var(--accent); }
+  .stage:nth-child(3) .event { border-left-color: var(--heart); }
+  .event .ev-title { font: 500 17px/1.3 var(--body); color: var(--ink-strong); }
+  .event .ev-time { font-size: 14px; color: var(--faint); margin: 2px 0 12px; }
+  .event pre { margin: 0; font: 400 14px/1.55 var(--body); color: var(--muted); white-space: pre-wrap; }
+  .stage p.note { color: var(--muted); font-size: 16px; margin: 14px 0 0; }
+
+  /* jak dodać */
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .how .card { border-top: 3px solid var(--ink-strong); padding-top: 18px; }
+  .how h3 { font: 400 20px/1.2 var(--head); text-transform: uppercase; margin: 0 0 12px; color: var(--ink-strong); }
+  .how ol { margin: 0; padding-left: 20px; color: var(--muted); }
+  .how li { margin: 4px 0; }
+  .how a.inline { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .how a.inline:hover { text-decoration: underline; }
+
+  /* faq */
+  .faq { max-width: 820px; }
+  .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+  .faq summary { font: 400 19px/1.3 var(--head); text-transform: uppercase; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; color: var(--ink-strong); }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-weight: 300; font-size: 24px; line-height: 1; color: var(--accent); }
+  .faq details[open] summary::after { content: "–"; }
+  .faq p { color: var(--muted); margin: 12px 0 0; }
+
+  /* stopka */
+  .site-foot { background: var(--night); color: #bdbdbd; padding: 40px 0; font-size: 15px; }
+  .site-foot .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between; }
+  .site-foot a { color: #fff; text-decoration: none; font: 400 13px var(--head); letter-spacing: 1.5px; text-transform: uppercase; }
+  .site-foot a:hover { color: var(--heart); }
+  .site-foot small { display: block; color: #8a8a8a; max-width: 620px; }
+
+  @media (max-width: 900px) {
+    .hero .wrap { grid-template-columns: 1fr; gap: 36px; padding-top: 44px; padding-bottom: 52px; }
+    .grid, .timeline, .how { grid-template-columns: 1fr; }
+    section.block { padding: 56px 0; }
+  }
+  @media (max-width: 480px) {
+    .back span.long { display: none; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="https://techlove.pl/" aria-label="Techlove – strona główna">
+      <img src="https://techlove.pl/wp-content/uploads/2026/05/new-logo.png" alt="Techlove" width="93" height="30">
+    </a>
+    <a class="back" href="https://techlove.pl/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      <span><span class="long">Wróć na </span>techlove.pl</span>
+    </a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="label accent">Formuła 1 · Kalendarz</span>
+      <h1>Cały sezon F1 w Twoim kalendarzu. <em>Z&nbsp;wynikami.</em></h1>
+      <p class="lead">Subskrybujesz raz. Kalendarz sam dopisze pola startowe po kwalifikacjach, a po wyścigu pokaże zwycięzcę i pełną klasyfikację. Bez aplikacji, bez reklam, za darmo.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" id="subscribe" href="webcal://norbertcala.github.io/f1-calendar/f1.ics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          Subskrybuj kalendarz
+        </a>
+        <a class="btn btn-ghost" id="google" href="https://calendar.google.com/calendar/render?cid=webcal%3A%2F%2Fnorbertcala.github.io%2Ff1-calendar%2Ff1.ics" target="_blank" rel="noopener">
+          Dodaj do Google
+        </a>
+      </div>
+      <div class="copyline">
+        <input id="icsurl" readonly value="https://norbertcala.github.io/f1-calendar/f1.ics" aria-label="Adres kalendarza">
+        <button id="copy" type="button">Kopiuj</button>
+      </div>
+    </div>
+
+    <aside class="live" aria-live="polite">
+      <div class="row" id="next">
+        <h2>Najbliższa sesja</h2>
+        <div class="skeleton"></div><div class="skeleton w60"></div>
+      </div>
+      <div class="row" id="last">
+        <h2>Ostatni wyścig</h2>
+        <div class="skeleton"></div><div class="skeleton w60"></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="label">Co jest w kalendarzu</span>
+      <h2>Każda sesja każdego weekendu</h2>
+      <p>Godziny pokazują się automatycznie w Twojej strefie czasowej. Gdy organizatorzy przesuną sesję, wpis w kalendarzu też się przesunie.</p>
+    </div>
+    <div class="grid">
+      <div class="item"><div class="num">01</div><h3>Treningi 1, 2 i 3</h3><p>Wszystkie sesje treningowe z godziną startu i nazwą toru.</p></div>
+      <div class="item"><div class="num">02</div><h3>Kwalifikacje</h3><p>Po sesji w tytule pojawia się zdobywca pole position, a w opisie pełne wyniki z czasami Q1, Q2 i Q3.</p></div>
+      <div class="item"><div class="num">03</div><h3>Sprinty</h3><p>Kwalifikacje do sprintu i sam sprint. Po wyścigu zwycięzca w tytule, klasyfikacja i pola startowe w opisie.</p></div>
+      <div class="item"><div class="num">04</div><h3>Pola startowe</h3><p>Zaraz po kwalifikacjach wydarzenie wyścigu dostaje listę, kto z którego pola rusza – od P1 do ostatniego miejsca.</p></div>
+      <div class="item"><div class="num">05</div><h3>Wyniki wyścigu</h3><p>Zwycięzca w tytule, podium, wszyscy kierowcy z czasem, punktami, zyskanymi i straconymi pozycjami oraz najszybsze okrążenie.</p></div>
+      <div class="item"><div class="num">06</div><h3>Dwa sezony</h3><p>Bieżący i poprzedni sezon – możesz wrócić do dowolnego Grand Prix i sprawdzić, kto wygrał.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="label">Jak to działa</span>
+      <h2>Jedno wydarzenie, trzy etapy</h2>
+      <p>Tak zmienia się wpis wyścigu w Twoim kalendarzu w trakcie weekendu. Nazwiska i czasy w przykładzie są poglądowe.</p>
+    </div>
+    <div class="timeline">
+      <div class="stage">
+        <span class="when-tag">Przed weekendem</span>
+        <div class="event">
+          <div class="ev-title">F1 Wyścig – Chinese GP</div>
+          <div class="ev-time">niedziela, 09:00–11:00</div>
+          <pre>Chinese Grand Prix – runda 2
+Shanghai International Circuit
+
+Pola startowe pojawią się po kwalifikacjach.</pre>
+        </div>
+        <p class="note">Masz godzinę startu i tor. Ustaw sobie przypomnienie jak przy każdym innym wydarzeniu.</p>
+      </div>
+      <div class="stage">
+        <span class="when-tag">Po kwalifikacjach</span>
+        <div class="event">
+          <div class="ev-title">F1 Wyścig – Chinese GP · Pole: Norris</div>
+          <div class="ev-time">niedziela, 09:00–11:00</div>
+          <pre>Pola startowe wg kwalifikacji:
+P1  Lando Norris (McLaren)
+P2  Max Verstappen (Red Bull)
+P3  Kimi Antonelli (Mercedes)
+…</pre>
+        </div>
+        <p class="note">Już w sobotę wiesz, kto rusza z pierwszej linii, bez otwierania żadnej aplikacji.</p>
+      </div>
+      <div class="stage">
+        <span class="when-tag">Po wyścigu</span>
+        <div class="event">
+          <div class="ev-title">🏆 F1 Chinese GP · Wygrał: Norris (McLaren)</div>
+          <div class="ev-time">niedziela, 09:00–11:00</div>
+          <pre>Podium: 1. Norris, 2. Verstappen, 3. Leclerc
+
+P1  Lando Norris – 1:32:11.402 | start P1 =, 25 pkt
+P2  Max Verstappen – +3.118 | start P2 =, 18 pkt
+P3  Charles Leclerc – +8.940 | start P4 ▲1, 15 pkt
+…</pre>
+        </div>
+        <p class="note">Przeglądając kalendarz wstecz, od razu widzisz zwycięzcę każdego Grand Prix.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="jak-dodac">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="label">Instrukcja</span>
+      <h2>Jak dodać kalendarz</h2>
+      <p>Kalendarz działa jako subskrypcja – nie importuj pliku, tylko subskrybuj adres. Dzięki temu będzie się sam aktualizował.</p>
+    </div>
+    <div class="how">
+      <div class="card">
+        <h3>iPhone i Mac</h3>
+        <ol>
+          <li>Kliknij <a class="inline" href="webcal://norbertcala.github.io/f1-calendar/f1.ics">Subskrybuj kalendarz</a>.</li>
+          <li>Potwierdź „Subskrybuj”.</li>
+          <li>W ustawieniach subskrypcji wybierz odświeżanie „Co godzinę”, żeby wyniki pojawiały się szybko.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Google Calendar i Android</h3>
+        <ol>
+          <li>Kliknij <a class="inline" href="https://calendar.google.com/calendar/render?cid=webcal%3A%2F%2Fnorbertcala.github.io%2Ff1-calendar%2Ff1.ics" target="_blank" rel="noopener">Dodaj do Google</a> na komputerze.</li>
+          <li>Potwierdź dodanie kalendarza.</li>
+          <li>Na Androidzie włącz synchronizację kalendarza „F1 – terminarz i wyniki” w aplikacji Google Calendar.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Outlook</h3>
+        <ol>
+          <li>Skopiuj adres kalendarza z góry strony.</li>
+          <li>Kalendarz → Dodaj kalendarz → Subskrybuj z sieci Web.</li>
+          <li>Wklej adres i nadaj nazwę, np. „Formuła 1”.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="label">Dobrze wiedzieć</span>
+      <h2>Najczęstsze pytania</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>Kiedy pojawiają się wyniki?</summary>
+        <p>Kalendarz aktualizuje się 3, 6 i 8 godzin po zakończeniu kwalifikacji, sprintu i wyścigu. Raz w tygodniu dodatkowo sprawdzamy, czy nie zmienił się terminarz. Kiedy dokładnie zobaczysz zmianę, zależy też od tego, jak często Twoja aplikacja odświeża subskrypcje.</p>
+      </details>
+      <details>
+        <summary>Dlaczego Google Calendar pokazuje wyniki później?</summary>
+        <p>Google odświeża subskrybowane kalendarze rzadziej niż Apple – zwykle co kilka, czasem kilkanaście godzin – i nie da się tego zmienić. W kalendarzu Apple możesz ustawić odświeżanie co godzinę.</p>
+      </details>
+      <details>
+        <summary>Czy pola startowe uwzględniają kary?</summary>
+        <p>Przed wyścigiem lista pochodzi z wyników kwalifikacji, więc nie uwzględnia kar przesunięcia na starcie. Po wyścigu w opisie pojawia się oficjalne ustawienie na starcie.</p>
+      </details>
+      <details>
+        <summary>Czy to coś kosztuje?</summary>
+        <p>Nie. Kalendarz jest darmowy, bez reklam i bez zakładania konta. Możesz go w każdej chwili usunąć z kalendarza jak każdą inną subskrypcję.</p>
+      </details>
+      <details>
+        <summary>Skąd pochodzą dane?</summary>
+        <p>Z otwartego Jolpica-F1 API, następcy znanej bazy Ergast, prowadzonego przez społeczność fanów F1. Kalendarz jest nieoficjalny i niezwiązany z Formula 1 ani FIA.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div>
+      <a href="https://techlove.pl/">Techlove.pl – z miłości do technologii</a>
+      <small>Kalendarz F1 jest nieoficjalnym projektem Techlove. Formula 1 i F1 to znaki towarowe Formula One Licensing B.V. Dane: Jolpica-F1.</small>
+    </div>
+    <a href="#jak-dodac">Jak dodać kalendarz</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ICS = "https://norbertcala.github.io/f1-calendar/f1.ics";
+
+  // kopiowanie adresu
+  var btn = document.getElementById("copy"), input = document.getElementById("icsurl");
+  btn.addEventListener("click", function () {
+    var done = function () { btn.textContent = "Skopiowano"; setTimeout(function () { btn.textContent = "Kopiuj"; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(input.value).then(done, function () { input.select(); document.execCommand("copy"); done(); });
+    } else { input.select(); document.execCommand("copy"); done(); }
+  });
+
+  // najbliższa sesja i ostatni wyścig – na żywo z kalendarza
+  function unescape(s) { return s.replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\"); }
+  function parseDate(v) {
+    var m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/);
+    if (!m) return null;
+    return m[4] ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : new Date(+m[1], m[2] - 1, +m[3]);
+  }
+  function parse(text) {
+    var lines = text.replace(/\r\n[ \t]/g, "").split(/\r?\n/), out = [], ev = null;
+    lines.forEach(function (l) {
+      if (l === "BEGIN:VEVENT") ev = {};
+      else if (l === "END:VEVENT") { if (ev && ev.start) out.push(ev); ev = null; }
+      else if (ev) {
+        var i = l.indexOf(":"); if (i < 0) return;
+        var key = l.slice(0, i).split(";")[0], val = l.slice(i + 1);
+        if (key === "DTSTART") { ev.start = parseDate(val); ev.allDay = val.length === 8; }
+        else if (key === "SUMMARY") ev.summary = unescape(val);
+        else if (key === "DESCRIPTION") ev.desc = unescape(val);
+        else if (key === "UID") ev.uid = val;
+      }
+    });
+    return out.sort(function (a, b) { return a.start - b.start; });
+  }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+  function fmt(ev) {
+    var opts = ev.allDay ? { weekday: "long", day: "numeric", month: "long" }
+                         : { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" };
+    return ev.start.toLocaleString("pl-PL", opts);
+  }
+  function countdown(d) {
+    var ms = d - new Date(); if (ms <= 0) return "trwa lub właśnie się zakończyła";
+    var h = Math.floor(ms / 36e5), days = Math.floor(h / 24);
+    if (days >= 1) return "za " + days + (days === 1 ? " dzień" : " dni") + " i " + (h % 24) + " h";
+    var m = Math.floor(ms / 6e4) % 60; return "za " + h + " h " + m + " min";
+  }
+  function clean(s) { return s.replace(/^🏆\s*/, "").replace(/^🏁\s*/, ""); }
+
+  fetch(ICS, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (text) {
+    var evs = parse(text), now = new Date();
+    var next = evs.filter(function (e) { return e.start > new Date(now - 2 * 36e5); })[0];
+    var races = evs.filter(function (e) { return /-race@/.test(e.uid || "") && e.start < now && /^🏆/.test(e.summary || ""); });
+    var last = races[races.length - 1];
+
+    var n = document.getElementById("next");
+    if (next) {
+      n.innerHTML = "<h2>Najbliższa sesja</h2><div class='title'>" + esc(next.summary) + "</div>" +
+        "<div class='when'>" + esc(fmt(next)) + "</div><div class='countdown'>" + esc(countdown(next.start)) + "</div>";
+    } else {
+      n.innerHTML = "<h2>Najbliższa sesja</h2><div class='title'>Sezon zakończony</div><div class='when'>Nowy terminarz pojawi się automatycznie.</div>";
+    }
+
+    var l = document.getElementById("last");
+    if (last) {
+      var podium = (last.desc.match(/Podium: (.+)/) || [])[1] || "";
+      var items = podium.split(", ").map(function (p) {
+        var m = p.match(/^(\d)\. (.+)$/); return m ? "<li><b>P" + m[1] + "</b>" + esc(m[2]) + "</li>" : "";
+      }).join("");
+      l.innerHTML = "<h2>Ostatni wyścig</h2><div class='title'>" + esc(clean(last.summary)) + "</div>" +
+        "<div class='when'>" + esc(fmt(last)) + "</div>" + (items ? "<ul class='podium'>" + items + "</ul>" : "");
+    } else {
+      l.remove();
+    }
+  }).catch(function () {
+    var box = document.querySelector(".live");
+    box.innerHTML = "<h2>Kalendarz</h2><div class='title'>Wszystkie sesje F1</div><div class='when'>Treningi, kwalifikacje, sprinty i wyścigi – z wynikami.</div>";
+  });
+})();
+</script>
+</body>
+</html>

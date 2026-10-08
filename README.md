@@ -19,9 +19,13 @@ Domyślnie kalendarz zawiera bieżący i poprzedni sezon.
 ## Jak to działa
 
 - `f1_calendar.py` pobiera dane z darmowego [Jolpica-F1 API](https://github.com/jolpica/jolpica-f1) (następca Ergast) i generuje `f1.ics`. Używa wyłącznie biblioteki standardowej Pythona.
-- GitHub Actions (`.github/workflows/update.yml`) uruchamia skrypt co godzinę i publikuje plik na GitHub Pages.
+- GitHub Actions (`.github/workflows/update.yml`) co godzinę robi szybkie sprawdzenie (bez zapytań do API F1). Pełna aktualizacja rusza 3, 6 i 8 godzin po kwalifikacjach, sprincie i wyścigu, raz w tygodniu (poniedziałek ok. 8:17 czasu polskiego) oraz po każdym pushu lub ręcznym uruchomieniu.
 - Jeśli API chwilowo nie działa, publikacja się nie wykona i zostaje poprzednia wersja pliku. Kalendarz nigdy nie zostanie wyczyszczony.
 - UID wydarzeń są stałe, więc aplikacja kalendarza aktualizuje istniejące wpisy zamiast tworzyć duplikaty.
+
+## Strona techlove.pl/f1
+
+Statyczna strona z przyciskiem subskrypcji jest w `techlove/f1/index.html`. Wgraj folder `f1` do katalogu głównego WordPressa (obok `wp-config.php`), a będzie dostępna pod `https://techlove.pl/f1/`. Podgląd: `https://norbertcala.github.io/f1-calendar/podglad-techlove/`.
 
 ## Ograniczenia
 

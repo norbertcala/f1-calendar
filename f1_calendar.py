@@ -347,13 +347,64 @@ def build_calendar(src: Source, years: list[int]) -> str:
     return "\r\n".join(lines) + "\r\n"
 
 
+# ------------------------------------------------------------ kiedy aktualizować
+
+# Sesje, po których pojawiają się nowe dane (treningi nie zmieniają kalendarza).
+RESULT_SESSIONS = ("quali", "sq", "sprint", "race")
+UPDATE_AFTER_HOURS = (3, 6, 8)
+CHECK_WINDOW = timedelta(minutes=70)  # cron co godzinę + zapas na opóźnienia GitHuba
+
+
+def update_due(ics_text: str, now: datetime) -> tuple[bool, str]:
+    """Czy teraz przypada aktualizacja: 3, 6 lub 8 godzin po końcu sesji z wynikami."""
+    uid = end = None
+    for line in ics_text.replace("\r\n ", "").splitlines():
+        if line.startswith("UID:"):
+            uid = line[4:]
+        elif line.startswith("DTEND:"):
+            end = datetime.strptime(line[6:], "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+        elif line.startswith("DTEND;VALUE=DATE:"):
+            # sesja bez godziny – traktujemy koniec dnia jako koniec sesji
+            end = datetime.strptime(line[17:], "%Y%m%d").replace(tzinfo=timezone.utc)
+        elif line == "END:VEVENT":
+            code = (uid or "").split("@")[0].rsplit("-", 1)[-1]
+            if end and code in RESULT_SESSIONS:
+                for h in UPDATE_AFTER_HOURS:
+                    t = end + timedelta(hours=h)
+                    if now - CHECK_WINDOW < t <= now:
+                        return True, f"{h} h po {uid}"
+            uid = end = None
+    return False, "brak sesji 3/6/8 h temu"
+
+
+def check(url: str) -> int:
+    now = datetime.now(timezone.utc)
+    if now.weekday() == 0 and now.hour == 6:
+        due, why = True, "cotygodniowe odświeżenie terminarza"
+    else:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "f1-ical-calendar/1.0"}), timeout=30) as r:
+                due, why = update_due(r.read().decode("utf-8"), now)
+        except Exception as e:  # brak opublikowanego pliku -> zbuduj go
+            due, why = True, f"nie udało się pobrać obecnego kalendarza ({e})"
+    print(f"Aktualizacja: {'TAK' if due else 'nie'} – {why}", file=sys.stderr)
+    if gh := os.environ.get("GITHUB_OUTPUT"):
+        with open(gh, "a") as f:
+            f.write(f"run={'true' if due else 'false'}\n")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     now = datetime.now(timezone.utc).year
     ap.add_argument("--years", type=int, nargs="+", default=[int(y) for y in os.environ.get("F1_YEARS", "").split()] or [now - 1, now])
     ap.add_argument("--out", type=Path, default=Path("public/f1.ics"))
     ap.add_argument("--fixtures", type=Path, help="katalog z zapisanymi odpowiedziami API (testy offline)")
+    ap.add_argument("--check", metavar="ICS_URL", help="tylko sprawdź, czy teraz przypada aktualizacja (3/6/8 h po sesji)")
     args = ap.parse_args()
+
+    if args.check:
+        return check(args.check)
 
     ics = build_calendar(Source(args.fixtures), sorted(set(args.years)))
     args.out.parent.mkdir(parents=True, exist_ok=True)

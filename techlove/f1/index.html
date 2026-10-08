@@ -184,6 +184,21 @@
     .btn { width: 100%; justify-content: center; }
   }
 </style>
+<!-- Google Analytics (ta sama usługa co techlove.pl). Na podglądzie poza techlove.pl zdarzenia trafiają tylko do konsoli. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  window.TL_GA_ON = /(^|\.)techlove\.pl$/.test(location.hostname);
+  if (window.TL_GA_ON) {
+    window.gtag = function () { dataLayer.push(arguments); };
+    var ga = document.createElement("script"); ga.async = true;
+    ga.src = "https://www.googletagmanager.com/gtag/js?id=G-VDCDBBSE6B";
+    document.head.appendChild(ga);
+    gtag("js", new Date());
+    gtag("config", "G-VDCDBBSE6B");
+  } else {
+    window.gtag = function () { console.log("[GA podgląd]", [].slice.call(arguments)); };
+  }
+</script>
 </head>
 <body>
 
@@ -387,6 +402,20 @@ P3  Charles Leclerc – +8.940 | start P4 ▲1, 15 pkt
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(input.value).then(done, function () { input.select(); document.execCommand("copy"); done(); });
     } else { input.select(); document.execCommand("copy"); done(); }
+  });
+
+  // statystyki: kliknięcia przycisków subskrypcji (zdarzenie GA4 „f1_calendar_subscribe”)
+  function where(el) { return el.closest(".hero") ? "hero" : el.closest("#jak-dodac") ? "instrukcja" : "inne"; }
+  function track(method, el) {
+    gtag("event", "f1_calendar_subscribe", { method: method, location: where(el), transport_type: "beacon" });
+  }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("a, button");
+    if (!a) return;
+    var href = a.getAttribute("href") || "";
+    if (href.indexOf("webcal:") === 0) track("apple_outlook_webcal", a);
+    else if (href.indexOf("calendar.google.com") !== -1) track("google_calendar", a);
+    else if (a.id === "copy") track("copy_link", a);
   });
 
   // najbliższe Grand Prix – dane z gp.json generowanego razem z kalendarzem

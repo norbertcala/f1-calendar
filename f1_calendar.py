@@ -45,6 +45,8 @@ SESSIONS = [
     ("Qualifying", "quali", "Kwalifikacje", 60),
 ]
 RACE_DURATION = 120
+QUALI_GRID_TITLE = "Wyniki kwalifikacji = pola startowe (przed ewentualnymi karami):"
+SQ_TITLE = "Wyniki kwalifikacji do sprintu = pola startowe (przed ewentualnymi karami):"
 
 
 # --------------------------------------------------------------------------- dane
@@ -141,13 +143,74 @@ def grid_label(g: str) -> str:
     return "z alei serwisowej" if g in ("0", "") else f"P{g}"
 
 
-def format_quali(rows: list[dict]) -> str:
-    lines = ["Wyniki kwalifikacji:"]
-    for r in sorted(rows, key=lambda x: int(x["position"])):
-        best = r.get("Q3") or r.get("Q2") or r.get("Q1") or "brak czasu"
-        seg = "Q3" if r.get("Q3") else "Q2" if r.get("Q2") else "Q1"
-        lines.append(f"P{r['position']}  {driver_name(r['Driver'])} ({team(r)}) – {best} [{seg}]")
+def quali_from_jolpica(rows: list[dict]) -> list[dict]:
+    """Ujednolicony format wyników kwalifikacji: pos, name, short, team, q=[Q1, Q2, Q3]."""
+    return [{"pos": int(r["position"]), "name": driver_name(r["Driver"]), "short": short_name(r["Driver"]),
+             "team": team(r), "q": [r.get("Q1"), r.get("Q2"), r.get("Q3")]}
+            for r in sorted(rows, key=lambda x: int(x["position"]))]
+
+
+def format_quali(rows: list[dict], title: str = "Wyniki kwalifikacji:") -> str:
+    lines = [title]
+    for r in rows:
+        q = r["q"]
+        seg = "Q3" if q[2] else "Q2" if q[1] else "Q1"
+        best = q[2] or q[1] or q[0] or "brak czasu"
+        lines.append(f"P{r['pos']}  {r['name']} ({r['team']}) – {best} [{seg.replace('Q', 'SQ') if 'sprintu' in title else seg}]")
     return "\n".join(lines)
+
+
+# ------------------------------------------------- OpenF1: kwalifikacje do sprintu
+
+OPENF1 = "https://api.openf1.org/v1"
+_OPENF1_SQ: dict[int, list] = {}
+
+
+def openf1_get(path: str) -> list:
+    req = urllib.request.Request(f"{OPENF1}/{path}", headers={"User-Agent": "f1-ical-calendar/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = json.load(r)
+    time.sleep(2.1)  # darmowy limit OpenF1: 30 zapytań/min
+    return data if isinstance(data, list) else []
+
+
+def fmt_lap(sec) -> str | None:
+    if sec in (None, "", 0):
+        return None
+    sec = float(sec)
+    return f"{int(sec // 60)}:{sec % 60:06.3f}"
+
+
+def sprint_quali_openf1(year: int, sq_date: str, fixtures: Path | None = None) -> list[dict]:
+    """Wyniki kwalifikacji do sprintu z OpenF1 (Jolpica ich nie publikuje). Pusta lista przy braku danych."""
+    if fixtures:
+        f = fixtures / f"openf1_sq_{year}_{sq_date}.json"
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else []
+    try:
+        sessions = _OPENF1_SQ.get(year)
+        if sessions is None:
+            sessions = _OPENF1_SQ[year] = openf1_get(f"sessions?year={year}&session_name=Sprint%20Qualifying")
+        session = next((s for s in sessions if s.get("date_start", "")[:10] == sq_date and not s.get("is_cancelled")), None)
+        if not session:
+            return []
+        key = session["session_key"]
+        results = openf1_get(f"session_result?session_key={key}")
+        drivers = {d["driver_number"]: d for d in openf1_get(f"drivers?session_key={key}")}
+    except Exception as e:  # OpenF1 jest dodatkiem – jego awaria nie może zatrzymać kalendarza
+        print(f"  ! OpenF1 ({sq_date}): {e}", file=sys.stderr)
+        return []
+    rows = []
+    for r in results:
+        if not r.get("position"):
+            continue
+        d = drivers.get(r["driver_number"], {})
+        dur = r.get("duration")
+        q = [fmt_lap(x) for x in dur] if isinstance(dur, list) else [fmt_lap(dur), None, None]
+        q = (q + [None, None, None])[:3]
+        name = d.get("full_name", "").title() or f"#{r['driver_number']}"
+        rows.append({"pos": int(r["position"]), "name": name, "short": d.get("last_name") or name.split()[-1],
+                     "team": d.get("team_name", ""), "q": q})
+    return sorted(rows, key=lambda x: x["pos"])
 
 
 def format_starting_grid(rows: list[dict], from_results: bool) -> str:
@@ -329,6 +392,14 @@ def build_season(src: Source, year: int, with_history: bool = False) -> list[lis
         uid = lambda code: f"{year}-{int(rnd):02d}-{code}@{UID_DOMAIN}"  # noqa: E731
 
         q_rows, r_rows, s_rows = quali.get(rnd, []), results.get(rnd, []), sprints.get(rnd, [])
+        qn = quali_from_jolpica(q_rows)
+        sq: list[dict] = []
+        sq_key = "SprintQualifying" if "SprintQualifying" in race else "SprintShootout" if "SprintShootout" in race else None
+        if with_history and sq_key:
+            sq_start = parse_dt(race[sq_key]["date"], race[sq_key].get("time"))
+            # OpenF1 udostępnia dane za darmo 30 min po sesji
+            if isinstance(sq_start, datetime) and sq_start + timedelta(minutes=45 + 30) < datetime.now(timezone.utc):
+                sq = sprint_quali_openf1(year, race[sq_key]["date"], src.fixtures)
 
         seen = set()
         for key, code, label, minutes in SESSIONS:
@@ -341,10 +412,8 @@ def build_season(src: Source, year: int, with_history: bool = False) -> list[lis
             desc = header
 
             if code == "quali" and q_rows:
-                pole = next((r for r in q_rows if r["position"] == "1"), None)
-                if pole:
-                    summary = f"F1 Kwalifikacje – {gp} · Pole: {short_name(pole['Driver'])}"
-                desc += "\n\n" + format_quali(q_rows)
+                summary = f"F1 Kwalifikacje – {gp} · Pole: {qn[0]['short']}"
+                desc += "\n\n" + format_quali(qn)
             elif code == "sprint":
                 if s_rows:
                     win = next((r for r in s_rows if r["position"] == "1"), None)
@@ -352,13 +421,20 @@ def build_season(src: Source, year: int, with_history: bool = False) -> list[lis
                         summary = f"🏁 F1 Sprint – {gp} · Wygrał: {short_name(win['Driver'])}"
                     desc += "\n\n" + format_results(s_rows, "Sprint")
                     desc += "\n\n" + format_starting_grid(s_rows, from_results=True)
+                elif sq:
+                    summary = f"F1 Sprint – {gp} · Pole: {sq[0]['short']}"
+                    desc += "\n\n" + format_quali(sq, SQ_TITLE)
                 else:
-                    desc += "\n\nPola startowe pojawią się po zakończeniu sprintu (API nie publikuje wyników kwalifikacji do sprintu)."
-            elif code == "sq" and s_rows:
-                sq_pole = next((r for r in s_rows if r.get("grid") == "1"), None)
-                if sq_pole:
-                    summary = f"F1 Kwalifikacje do sprintu – {gp} · Pole: {short_name(sq_pole['Driver'])}"
-                desc += "\n\n" + format_starting_grid(s_rows, from_results=True)
+                    desc += "\n\nWyniki kwalifikacji do sprintu (pola startowe) pojawią się po ich zakończeniu."
+            elif code == "sq":
+                if sq:
+                    summary = f"F1 Kwalifikacje do sprintu – {gp} · Pole: {sq[0]['short']}"
+                    desc += "\n\n" + format_quali(sq, "Wyniki kwalifikacji do sprintu:")
+                elif s_rows:
+                    sq_pole = next((r for r in s_rows if r.get("grid") == "1"), None)
+                    if sq_pole:
+                        summary = f"F1 Kwalifikacje do sprintu – {gp} · Pole: {short_name(sq_pole['Driver'])}"
+                    desc += "\n\n" + format_starting_grid(s_rows, from_results=True)
 
             events.append(vevent(uid(code), start, minutes, summary, desc, location, url, "F1"))
 
@@ -376,10 +452,8 @@ def build_season(src: Source, year: int, with_history: bool = False) -> list[lis
             desc += "\n\n" + format_results(r_rows, "Wyścig")
             desc += "\n\n" + format_starting_grid(r_rows, from_results=True)
         elif q_rows:
-            pole = next((r for r in q_rows if r["position"] == "1"), None)
-            if pole:
-                summary = f"F1 Wyścig – {gp} · Pole: {short_name(pole['Driver'])}"
-            desc += "\n\n" + format_starting_grid(q_rows, from_results=False)
+            summary = f"F1 Wyścig – {gp} · Pole: {qn[0]['short']}"
+            desc += "\n\n" + format_quali(qn, QUALI_GRID_TITLE)
         else:
             desc += "\n\nPola startowe pojawią się po kwalifikacjach."
         if with_history:

@@ -5,7 +5,8 @@ Subskrybowalny kalendarz `.ics` z wszystkimi sesjami Formuły 1, który aktualiz
 | Moment | Co widać w kalendarzu |
 |---|---|
 | Przed weekendem | Treningi, kwalifikacje, sprint, wyścig – godziny w Twojej strefie czasowej |
-| Po kwalifikacjach | Tytuł kwalifikacji: `· Pole: Norris`, w opisie wyniki Q1/Q2/Q3. Wyścig: lista pól startowych |
+| Po kwalifikacjach | Tytuł kwalifikacji: `· Pole: Norris`, w opisie wyniki Q1/Q2/Q3. Wyścig: tytuł z pole position, w opisie pełne wyniki kwalifikacji (= pola startowe) |
+| Po kwalifikacjach do sprintu | To samo dla sprintu: pole w tytule, wyniki SQ1/SQ2/SQ3 w opisie sprintu |
 | Po sprincie | Tytuł: `🏁 … · Wygrał: …`, w opisie klasyfikacja i oficjalne pola startowe sprintu |
 | Po wyścigu | Tytuł: `🏆 … · Wygrał: Verstappen (Red Bull)`, w opisie podium, pełna klasyfikacja (start → meta, zyski/straty pozycji, punkty), najszybsze okrążenie i oficjalne pola startowe |
 
@@ -30,7 +31,7 @@ Statyczna strona z przyciskiem subskrypcji jest w `techlove/f1/index.html`. Wgra
 ## Ograniczenia
 
 - Pola startowe przed wyścigiem pochodzą z wyników kwalifikacji, więc nie uwzględniają kar. Po wyścigu pokazywane są oficjalne pola startowe.
-- API nie publikuje osobno wyników kwalifikacji do sprintu, dlatego grid sprintu pojawia się dopiero po sprincie.
+- Wyniki kwalifikacji do sprintu pochodzą z [OpenF1](https://openf1.org) (Jolpica ich nie publikuje). Są pobierane tylko dla bieżącego sezonu; jeśli OpenF1 nie odpowiada, kalendarz generuje się bez nich.
 - Wyniki trafiają do API zwykle w ciągu kilku godzin od sesji.
 - Odświeżanie zależy od aplikacji: Apple Calendar można ustawić na „co godzinę”, Google Calendar odświeża subskrypcje co kilka–kilkanaście godzin.
 

@@ -118,6 +118,11 @@
   .last-line strong { color: var(--ink-strong); font-weight: 600; }
   .skeleton { height: 14px; background: var(--soft); margin: 8px 0; }
   .skeleton.w60 { width: 60%; }
+  @media (max-width: 480px) {
+    .day { grid-template-columns: 58px 1fr; padding: 12px 16px; gap: 10px; }
+    .gp-head, .gp-block { padding-left: 16px; padding-right: 16px; }
+    .sess.next .n::after { display: table; margin: 4px 0 2px; }
+  }
   @media (max-width: 380px) { .cd-grid b { font-size: 34px; } .gp-name h2 { font-size: 27px; } }
 
   /* sekcje */

@@ -480,6 +480,7 @@ def build_calendar(src: Source, years: list[int]) -> str:
         "X-WR-TIMEZONE:UTC",
         "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
         "X-PUBLISHED-TTL:PT1H",
+        f"X-F1-GENERATED:{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}",
     ]
     latest = max(years)
     for y in years:
@@ -529,41 +530,50 @@ def build_gp_json(src: Source, year: int) -> dict:
 # Sesje, po których pojawiają się nowe dane (treningi nie zmieniają kalendarza).
 RESULT_SESSIONS = ("quali", "sq", "sprint", "race")
 UPDATE_AFTER_HOURS = (3, 6, 8)
-CHECK_WINDOW = timedelta(minutes=70)  # cron co godzinę + zapas na opóźnienia GitHuba
 
 
 def update_due(ics_text: str, now: datetime) -> tuple[bool, str]:
-    """Czy teraz przypada aktualizacja: 3, 6 lub 8 godzin po końcu sesji z wynikami."""
+    """Czy trzeba przebudować kalendarz.
+
+    Odporne na rzadkie i opóźnione uruchomienia harmonogramu GitHuba: aktualizacja jest
+    potrzebna, gdy minął próg 3/6/8 h po sesji z wynikami, a opublikowany kalendarz
+    wygenerowano PRZED tym progiem (czyli próg nie został jeszcze „obsłużony”).
+    """
+    text = ics_text.replace("\r\n ", "")
+    generated = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    for line in text.splitlines():
+        if line.startswith("X-F1-GENERATED:"):
+            generated = datetime.strptime(line[15:].strip(), "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+            break
+    if now - generated > timedelta(days=7):
+        return True, "kalendarz starszy niż 7 dni (odświeżenie terminarza)"
     uid = end = None
-    for line in ics_text.replace("\r\n ", "").splitlines():
+    for line in text.splitlines():
         if line.startswith("UID:"):
             uid = line[4:]
         elif line.startswith("DTEND:"):
             end = datetime.strptime(line[6:], "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
         elif line.startswith("DTEND;VALUE=DATE:"):
-            # sesja bez godziny – traktujemy koniec dnia jako koniec sesji
             end = datetime.strptime(line[17:], "%Y%m%d").replace(tzinfo=timezone.utc)
         elif line == "END:VEVENT":
             code = (uid or "").split("@")[0].rsplit("-", 1)[-1]
             if end and code in RESULT_SESSIONS:
                 for h in UPDATE_AFTER_HOURS:
                     t = end + timedelta(hours=h)
-                    if now - CHECK_WINDOW < t <= now:
-                        return True, f"{h} h po {uid}"
+                    if generated < t <= now and now - t < timedelta(hours=48):
+                        return True, f"minął próg {h} h po {uid}, kalendarz z {generated:%d.%m %H:%M} UTC"
             uid = end = None
-    return False, "brak sesji 3/6/8 h temu"
+    return False, f"brak nieobsłużonych progów 3/6/8 h (kalendarz z {generated:%d.%m %H:%M} UTC)"
 
 
 def check(url: str) -> int:
     now = datetime.now(timezone.utc)
-    if now.weekday() == 0 and now.hour == 6:
-        due, why = True, "cotygodniowe odświeżenie terminarza"
-    else:
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "f1-ical-calendar/1.0"}), timeout=30) as r:
-                due, why = update_due(r.read().decode("utf-8"), now)
-        except Exception as e:  # brak opublikowanego pliku -> zbuduj go
-            due, why = True, f"nie udało się pobrać obecnego kalendarza ({e})"
+    try:
+        req = urllib.request.Request(f"{url}?t={int(now.timestamp())}", headers={"User-Agent": "f1-ical-calendar/1.0"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            due, why = update_due(r.read().decode("utf-8"), now)
+    except Exception as e:  # brak opublikowanego pliku -> zbuduj go
+        due, why = True, f"nie udało się pobrać obecnego kalendarza ({e})"
     print(f"Aktualizacja: {'TAK' if due else 'nie'} – {why}", file=sys.stderr)
     if gh := os.environ.get("GITHUB_OUTPUT"):
         with open(gh, "a") as f:

@@ -1,12 +1,12 @@
 name: Aktualizuj kalendarz F1
 
-# Co godzinę uruchamia się tylko szybkie sprawdzenie (bez zapytań do API F1).
+# Co 15 minut uruchamia się tylko szybkie sprawdzenie (bez zapytań do API F1).
 # Pełna aktualizacja rusza 3, 6 i 8 godzin po kwalifikacjach, sprincie i wyścigu,
-# raz w tygodniu (poniedziałek rano, na wypadek zmian w terminarzu),
+# gdy kalendarz jest starszy niż 7 dni (zmiany w terminarzu),
 # po każdym pushu i po ręcznym uruchomieniu.
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
